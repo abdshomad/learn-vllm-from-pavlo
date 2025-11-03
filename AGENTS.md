@@ -105,3 +105,30 @@ uv run -m your_package.main
 - Freeze (reqs workflow): `uv pip freeze > requirements-lock.txt`
 
 
+
+### 8) Browser usage: always screenshot each step
+
+When using the browser tools to test or demonstrate flows, take a screenshot at every meaningful step (including sub-steps and important state changes).
+
+- **Where to save**: `./screenshots/{step-name}/{2-digits + step-or-sub-step-name}`
+  - The top-level `{step-name}` groups a scenario or test (e.g., `login-flow`, `inference-demo`).
+  - The inner filename prefix uses two digits for ordering, followed by a short kebab-case label.
+  - Sub-steps may append a letter for clarity.
+
+Examples:
+
+```bash
+./screenshots/login-flow/01-open-login.png
+./screenshots/login-flow/02-enter-credentials.png
+./screenshots/login-flow/03-submit.png
+./screenshots/login-flow/03a-error-toast.png
+./screenshots/inference-demo/01-open-dashboard.png
+./screenshots/inference-demo/02-load-model.png
+./screenshots/inference-demo/03-run-prompt.png
+```
+
+Notes:
+- Prefer concise, descriptive names; use kebab-case.
+- Keep numbering contiguous within each `{step-name}` group.
+- Capture after any UI mutation, navigation, or key validation state.
+
