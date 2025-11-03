@@ -46,7 +46,7 @@ echo ""
 # Check Prometheus web UI
 echo "[verify_monitoring] Checking Prometheus web interface..."
 PROM_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${PROMETHEUS_PORT}" 2>/dev/null || echo "000")
-if [[ "$PROM_STATUS" == "200" ]]; then
+if [[ "$PROM_STATUS" == "200" || "$PROM_STATUS" == "302" ]]; then
   echo "[verify_monitoring] ✓ Prometheus web UI accessible at http://${NODE_IP}:${PROMETHEUS_PORT}"
 else
   echo "[verify_monitoring] ✗ Prometheus web UI not accessible (HTTP $PROM_STATUS)"
@@ -64,26 +64,40 @@ fi
 echo ""
 
 # Check Ray metrics endpoint (if Ray is running)
-if command -v ray >/dev/null 2>&1; then
+# Check if Ray dashboard is accessible (indicates Ray is running)
+if curl -s -o /dev/null -w "%{http_code}" "http://localhost:8265" 2>/dev/null | grep -q "200"; then
   echo "[verify_monitoring] Checking Ray metrics availability..."
-  RAY_METRICS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8265/metrics" 2>/dev/null || echo "000")
-  if [[ "$RAY_METRICS" == "200" ]]; then
-    echo "[verify_monitoring] ✓ Ray metrics endpoint accessible at http://${NODE_IP}:8265/metrics"
+  
+  # Check Ray prometheus health (Ray 2.x uses internal metrics scraping)
+  if command -v python3 >/dev/null 2>&1; then
+    RAY_PROM_RESPONSE=$(curl -s "http://localhost:8265/api/prometheus_health" 2>/dev/null || echo "")
+    RAY_PROM_MSG=$(echo "$RAY_PROM_RESPONSE" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('msg', ''))" 2>/dev/null || echo "")
+    if [[ "$RAY_PROM_MSG" == "prometheus running" ]]; then
+      echo "[verify_monitoring] ✓ Ray Prometheus integration healthy"
+    else
+      echo "[verify_monitoring] ⚠ Ray Prometheus health check unclear"
+    fi
     
-    # Check for specific Ray metrics
-    echo "[verify_monitoring] Checking for Ray metrics..."
-    RAY_METRICS_COUNT=$(curl -s "http://localhost:8265/metrics" 2>/dev/null | grep -c "^ray_" || echo "0")
-    echo "[verify_monitoring] Found $RAY_METRICS_COUNT Ray metrics"
-  else
-    echo "[verify_monitoring] ✗ Ray metrics endpoint not accessible (HTTP $RAY_METRICS)"
-    echo "[verify_monitoring]  (This is normal if Ray is not running or not configured)"
+    # Check Ray Grafana integration
+    RAY_GRAFANA_RESPONSE=$(curl -s "http://localhost:8265/api/grafana_health" 2>/dev/null || echo "")
+    RAY_GRAFANA_MSG=$(echo "$RAY_GRAFANA_RESPONSE" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('msg', ''))" 2>/dev/null || echo "")
+    RAY_GRAFANA_HOST=$(echo "$RAY_GRAFANA_RESPONSE" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('data', {}).get('grafanaHost', ''))" 2>/dev/null || echo "")
+    
+    if [[ "$RAY_GRAFANA_MSG" == "Grafana running" ]]; then
+      echo "[verify_monitoring] ✓ Ray Grafana integration healthy"
+      if [[ -n "$RAY_GRAFANA_HOST" ]]; then
+        echo "[verify_monitoring] ✓ Ray configured Grafana host: $RAY_GRAFANA_HOST"
+      fi
+    else
+      echo "[verify_monitoring] ⚠ Ray Grafana integration unclear"
+    fi
   fi
 fi
 
 echo ""
 
 # Check if Prometheus can scrape Ray metrics
-if command -v curl >/dev/null 2>&1; then
+if command -v curl >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
   echo "[verify_monitoring] Checking Prometheus targets..."
   
   # Try to get targets from Prometheus API (may fail if not configured)
@@ -94,10 +108,12 @@ if command -v curl >/dev/null 2>&1; then
     if echo "$PROM_TARGETS" | grep -q "activeTargets"; then
       echo "[verify_monitoring] ✓ Prometheus has targets configured"
       
-      # Check if Ray targets are up
-      RAY_TARGETS=$(echo "$PROM_TARGETS" | grep -c "ray" || echo "0")
-      if [[ "$RAY_TARGETS" -gt 0 ]]; then
-        echo "[verify_monitoring] ✓ Prometheus has $RAY_TARGETS Ray target(s)"
+      # Check target health using Python for better JSON parsing
+      PROM_TARGETS_PARSED=$(echo "$PROM_TARGETS" | python3 -c "import sys, json; d=json.load(sys.stdin); [(print(f\"{t['labels']['job']}: {t['health']}\")) for t in d['data']['activeTargets']]" 2>/dev/null || echo "")
+      
+      if [[ -n "$PROM_TARGETS_PARSED" ]]; then
+        echo "[verify_monitoring] Target health:"
+        echo "$PROM_TARGETS_PARSED" | sed 's/^/  /'
       fi
     else
       echo "[verify_monitoring] ⚠ Prometheus targets API responded but no targets found"
