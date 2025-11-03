@@ -215,6 +215,63 @@ fi
 # Cleanup temp files
 rm -f /tmp/grafana-datasource.json /tmp/ray-dashboard.json
 
+# Import Ray-provided dashboards if they exist
+echo "[configure_monitoring] Importing Ray-provided Grafana dashboards..."
+RAY_DASHBOARD_DIR="/tmp/ray/session_latest/metrics/grafana/dashboards"
+
+if [[ -d "$RAY_DASHBOARD_DIR" ]] && command -v python3 >/dev/null 2>&1; then
+  python3 << 'PYEOF'
+import json
+import glob
+import subprocess
+import os
+import tempfile
+
+dashboard_dir = "/tmp/ray/session_latest/metrics/grafana/dashboards"
+dashboard_files = glob.glob(os.path.join(dashboard_dir, '*_grafana_dashboard.json'))
+
+for dashboard_file in dashboard_files:
+    filename = os.path.basename(dashboard_file)
+    
+    try:
+        with open(dashboard_file, 'r') as f:
+            dashboard_data = json.load(f)
+        
+        wrapped = {
+            'dashboard': dashboard_data,
+            'overwrite': False
+        }
+        
+        # Write to temp file to avoid argument length issues
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(wrapped, f)
+            temp_path = f.name
+        
+        try:
+            result = subprocess.run(
+                ['curl', '-s', '-u', 'admin:admin', '-X', 'POST',
+                 '-H', 'Content-Type: application/json',
+                 '-d', f'@{temp_path}',
+                 'http://localhost:3000/api/dashboards/db'],
+                capture_output=True,
+                text=True
+            )
+            
+            response = json.loads(result.stdout)
+            if response.get('status') == 'success':
+                print(f"  ✓ Imported: {filename}")
+            elif 'already exist' in response.get('message', '').lower() or 'changed' in response.get('message', '').lower():
+                # Skip if already exists or was modified
+                pass
+        finally:
+            os.unlink(temp_path)
+    except Exception as e:
+        print(f"  ⚠ Error with {filename}: {str(e)[:80]}")
+PYEOF
+else
+  echo "[configure_monitoring] ⚠ Ray dashboard directory not found or python3 unavailable"
+fi
+
 # Check service status
 echo "[configure_monitoring] Checking service status..."
 if systemctl is-active --quiet prometheus; then
