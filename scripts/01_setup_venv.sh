@@ -12,9 +12,27 @@ if ! command -v uv >/dev/null 2>&1; then
   export PATH="$HOME/.local/bin:$PATH"
 fi
 
-echo "[setup_venv] Creating venv at $VENV_DIR with Python $PYTHON_VERSION"
+echo "[setup_venv] Checking if venv already exists at $VENV_DIR"
 mkdir -p "$REPO_ROOT"
 cd "$REPO_ROOT"
+
+if [[ -d "$VENV_DIR" ]]; then
+  echo "[setup_venv] Virtual environment already exists at $VENV_DIR"
+  echo "[setup_venv] Activating existing venv and verifying packages"
+  activate_venv
+  
+  # Check if critical packages are installed
+  if uv pip list | grep -q -E "(ray|vllm)"; then
+    echo "[setup_venv] Packages appear to be installed. Skipping reinstall."
+    echo "[setup_venv] Done"
+    exit 0
+  else
+    echo "[setup_venv] Packages missing. Recreating venv..."
+    rm -rf "$VENV_DIR"
+  fi
+fi
+
+echo "[setup_venv] Creating venv at $VENV_DIR with Python $PYTHON_VERSION"
 uv venv "$VENV_DIR" -p "$PYTHON_VERSION"
 
 echo "[setup_venv] Activating venv and installing packages"
