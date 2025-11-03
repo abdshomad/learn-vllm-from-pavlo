@@ -11,8 +11,8 @@ if [[ -z "${NODE_IP}" ]]; then
 fi
 
 echo "[start_ray_head] Starting Ray head on ${NODE_IP}:${RAY_PORT}"
-ray start --head --node-ip-address "$NODE_IP" --port "$RAY_PORT"
-ray status || true
+uv run ray start --head --node-ip-address "$NODE_IP" --port "$RAY_PORT"
+uv run ray status || true
 echo "[start_ray_head] Done"
 
 

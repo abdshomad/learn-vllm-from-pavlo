@@ -18,8 +18,8 @@ if [[ -z "${HEAD_NODE_IP}" ]]; then
 fi
 
 echo "[start_ray_worker] Joining worker ${WORKER_NODE_IP} to ${HEAD_NODE_IP}:${RAY_PORT}"
-ray start --address "${HEAD_NODE_IP}:${RAY_PORT}" --node-ip-address "${WORKER_NODE_IP}"
-ray status || true
+uv run ray start --address "${HEAD_NODE_IP}:${RAY_PORT}" --node-ip-address "${WORKER_NODE_IP}"
+uv run ray status || true
 echo "[start_ray_worker] Done"
 
 
