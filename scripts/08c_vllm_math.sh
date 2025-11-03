@@ -35,12 +35,15 @@ echo "[vllm-math] Using model: ${MODEL}"
 # A simple but non-trivial math word problem
 PROBLEM="If a train travels 120 kilometers in 1.5 hours, then continues for 2 hours at a speed that is 20% slower, how far does it travel in total? Show brief steps and give the final numeric answer in kilometers."
 
+# Properly escape the problem for JSON
+PROBLEM_JSON=$(echo "$PROBLEM" | jq -Rs . 2>/dev/null || echo "\"${PROBLEM//\"/\\\"}\"")
+
 REQ=$(cat <<JSON
 {
   "model": "__MODEL__",
   "messages": [
     {"role": "system", "content": "You are a careful math tutor. Be concise and accurate."},
-    {"role": "user", "content": ${PROBLEM@Q}}
+    {"role": "user", "content": __PROBLEM__}
   ],
   "max_tokens": 256,
   "temperature": 0.2
@@ -48,6 +51,7 @@ REQ=$(cat <<JSON
 JSON
 )
 REQ=${REQ/__MODEL__/${MODEL}}
+REQ=${REQ/__PROBLEM__/${PROBLEM_JSON}}
 
 RESP=$(curl -sS -X POST "${BASE_URL}/v1/chat/completions" \
   -H "Content-Type: application/json" \
