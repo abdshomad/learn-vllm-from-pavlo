@@ -12,7 +12,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 : "${MODEL_NAME:=TinyLlama-1.1B-Chat-v1.0}"
 : "${MODEL_REPO:=https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0}"
 : "${MODEL_DIR:=$SHARED_DIR/$MODEL_NAME}"
-: "${VLLM_PORT:=8000}"
 : "${VLLM_HOST:=0.0.0.0}"
 : "${TENSOR_PARALLEL_SIZE:=2}"
 : "${RAY_PORT:=6379}"
@@ -32,5 +31,27 @@ activate_venv() {
 primary_ip() {
   hostname -I 2>/dev/null | awk '{print $1}'
 }
+
+# Helper: find next available port starting from a given port
+find_available_port() {
+  local start_port="${1:-8000}"
+  local port="$start_port"
+  
+  while command -v nc >/dev/null 2>&1 && nc -z 127.0.0.1 "$port" 2>/dev/null; do
+    ((port++))
+    # Safety: don't scan forever
+    if [[ $port -gt $((start_port + 100)) ]]; then
+      echo "$start_port" >&2
+      return 1
+    fi
+  done
+  
+  echo "$port"
+}
+
+# Auto-find available VLLM port if not explicitly set
+if [[ -z "${VLLM_PORT:-}" ]]; then
+  VLLM_PORT=$(find_available_port 8000)
+fi
 
 
