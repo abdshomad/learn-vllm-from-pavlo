@@ -1,0 +1,117 @@
+yt-dlp --write-subs --skip-download --sub-format vtt --output "%(title)s.%(ext)s" "https://youtu.be/4tHtzVtvhFw"
+
+There are large language models. There
+are small language models. Uh you can
+train language models and process of
+using language models asking questions
+called inferencing. I will try to
+inference large language model that does
+not fit on one computer even with
+multiple GPUs because it needs a lot of
+video memory. I will try to use DeepSeek
+R1. It has 671 billion parameters and it
+is estimated that it will require 16
+GPUs with 80 GBTE memory each. There are
+different techniques to optimize large
+language model distillation and
+quantization. Distillation is a process
+that creates a new model when smaller
+models like llama and quen are learning
+from the teacher dips R1 and creating
+smaller distilled models. Quantization
+is decreasing model numerical precision
+from for example flow 32 to integer 8 to
+create quantized model. Different
+versions can be downloaded from hugging
+face. I will download this one deepsec
+car 1. It is possible to run optimized
+version on a single computer for example
+to use very popular software or llama.
+It can run on Linux, Mac and windows and
+it also support multiple GPUs. It's even
+possible to run on a smartphone if you
+download very optimized version. I think
+on this stage it's called small language
+model. I tried this pocket pal AI
+application. It works on iPhone and
+Android and it can run small language
+models. But in case of multiple
+computers software like VLM with ray
+cluster can inference LLM on multiple
+computers with multiple GPUs. This is
+will be set up hardware for servers with
+16 GPUs. Software Linux 96 with CUDA
+12.9. I will use default pre-installed
+Python 39. These IP addresses I will use
+on these four servers and all servers
+have mounted shared file system. So all
+machines can see the same files.
+Important note if servers have multiple
+IP addresses. It's very important to set
+VLM host IP to avoid network related
+errors. Now brace yourself. After this
+point there will be many commands. I
+will add a link to the text version of
+this video in the video description.
+Let's change colors for each server. Uh
+I have Python 39. All of them running on
+Rocky Linux 96. Each server has four
+GPUs. In addition, I need to install
+Python 3 Develop package. Now I will
+create directory on a shared file system
+cluster lm. And here I will store all
+files. Now I'm creating Python
+environment variable. Activate.
+Installing array cluster. Done.
+Installing VLM. Done. Now I'm setting
+VLM host IP because I have multiple IP
+addresses on each server. So each server
+will get its own VLM IP address.
+Starting ray head node with IP address
+and port number. I can run ray status.
+And I can see one node is active and I
+see four GPUs. Now I'm adding additional
+nodes to the ray cluster. Ray status
+again. Now I can see four nodes in the
+cluster and I can see 16 GPUs on the
+head node. You can also run array list
+nodes. It will list IP addresses that
+are configured to be used in the
+cluster. Now it is time to download DCR
+1. I will use g clone. Full size after
+download will be 1.3 terabyte but it is
+possible to save space just by deleting
+Git subdirectory which is taking half of
+the space what is not needed for
+inferencing this model now I can use VLM
+to inference model because I use SH file
+system and it's very large model
+it takes a lot of time to start in my
+case it was close to 1 hour at the end
+you will get application startup
+complete. Now it's ready to be used. I
+can access model from a command line. I
+can use VLM chat with URL to the node
+where I started it. I started on a head
+node with IP address 61. Let's draw a
+cat with ASKI code. I like this cat.
+This cat looks like ice cream. This look
+like a sleeping cat, but it writes it's
+sitting cat. Now I can connect VLM to
+open web UI. I will use open AI API.
+What I can find in admin panel settings
+uh connections
+add open AI API connection
+using URL verify. And now I can see
+deepsear one here. And I can make it
+public.
+Save and update. Now I can create new
+chat. Let's ask how to make a battery in
+the wild.
+And while it's answering, we can check
+on one of the servers. Uh what is the
+GPU doing?
+And Smi watch. And all GPUs are very
+busy. And this is how you run large
+language model on multiple servers with
+multiple GPUs.
