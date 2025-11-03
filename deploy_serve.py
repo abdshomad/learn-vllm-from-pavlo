@@ -7,7 +7,6 @@ This script deploys the Serve application defined in serve_app.py.
 import os
 import ray
 from ray import serve
-from serve_app import app
 
 # Get configuration from environment variables
 SERVE_HOST = os.getenv('SERVE_HOST', '0.0.0.0')
@@ -26,17 +25,19 @@ print(f"  Tensor parallel size: {TENSOR_PARALLEL_SIZE}")
 # Connect to existing Ray cluster
 ray.init(address='auto', ignore_reinit_error=True)
 
-# Deploy the applications using serve.run
-# This will start serve and deploy all deployments including TinyLlama
+# Start serve if not already started
 try:
-    serve.run(app, host=SERVE_HOST, port=SERVE_PORT, name='serve_app')
-except Exception as e:
-    # If serve.run fails, try the alternative approach
-    print(f"Warning: serve.run failed with {e}, trying alternative deployment method...")
-    # Start serve explicitly
     serve.start(detached=True, http_options={'host': SERVE_HOST, 'port': SERVE_PORT})
-    # Deploy the app
-    serve.deploy(app, name='serve_app')
+except RuntimeError:
+    # Serve already started
+    pass
+
+# Deploy using serve.run() which handles everything
+from serve_app import app
+
+# Deploy all services using serve.run() with the app
+# This will deploy all services with route_prefix="/"
+serve.run(app, name='serve_app', route_prefix="/", blocking=False)
 
 print('Ray Serve application deployed successfully!')
 print(f'Access echo service at: http://<NODE_IP>:{SERVE_PORT}/echo')

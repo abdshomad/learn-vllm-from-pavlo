@@ -16,8 +16,7 @@ except ImportError:
 
 @serve.deployment(
     name="echo_service",
-    num_replicas=1,
-    route_prefix="/echo"
+    num_replicas=1
 )
 class EchoService:
     """Simple echo service that returns the input message."""
@@ -41,8 +40,7 @@ class EchoService:
 
 @serve.deployment(
     name="calculator",
-    num_replicas=1,
-    route_prefix="/calc"
+    num_replicas=1
 )
 class Calculator:
     """Simple calculator service."""
@@ -96,7 +94,6 @@ def create_tinyllama_deployment():
     @serve.deployment(
         name="tinyllama",
         num_replicas=1,
-        route_prefix="/llm",
         ray_actor_options={"num_gpus": num_gpus}
     )
     class TinyLlamaService:
@@ -183,20 +180,61 @@ def create_tinyllama_deployment():
     return TinyLlamaService
 
 
+# Create an ingress deployment that routes to different services
+@serve.deployment
+class Ingress:
+    def __init__(self, echo_handle, calc_handle, llm_handle=None):
+        self.echo_handle = echo_handle
+        self.calc_handle = calc_handle
+        self.llm_handle = llm_handle
+    
+    async def __call__(self, request):
+        path = request.url.path.rstrip("/")
+        
+        # Extract request data if it's a POST request
+        if hasattr(request, "method") and request.method == "POST":
+            try:
+                data = await request.json()
+            except:
+                data = {}
+        else:
+            data = {}
+        
+        if path == "/echo" or path.startswith("/echo/"):
+            # Forward the request to echo service
+            result = await self.echo_handle.remote(data if data else request)
+            return result
+        elif path == "/calc" or path.startswith("/calc/"):
+            # Forward the request to calculator service
+            result = await self.calc_handle.remote(data if data else request)
+            return result
+        elif path == "/llm" or path.startswith("/llm/"):
+            if self.llm_handle:
+                result = await self.llm_handle.remote(data if data else request)
+                return result
+            else:
+                return {"error": "LLM service not available"}
+        else:
+            return {
+                "message": "Ray Serve Application",
+                "available_endpoints": {
+                    "/echo": "Echo service - POST with {'message': 'text'}",
+                    "/calc": "Calculator service - POST with {'operation': 'add|subtract|multiply|divide', 'a': number, 'b': number}",
+                    "/llm": "TinyLlama LLM service - POST with {'prompt': 'text', 'max_tokens': number}"
+                }
+            }
+
 # Create bound deployments
 echo_service = EchoService.bind()
 calculator = Calculator.bind()
 
 # Only include TinyLlama if vLLM is available
-deployments = [echo_service, calculator]
 if VLLM_AVAILABLE:
     TinyLlamaService = create_tinyllama_deployment()
     tinyllama_service = TinyLlamaService.bind()
-    deployments.append(tinyllama_service)
+    app = Ingress.bind(echo_service, calculator, tinyllama_service)
     print("TinyLlama service will be deployed")
 else:
+    app = Ingress.bind(echo_service, calculator, None)
     print("Warning: vLLM not available, TinyLlama service will not be deployed")
-
-# Export app for serve deploy (if needed)
-app = serve.Application(deployments)
 
