@@ -19,7 +19,13 @@ fi
 
 echo "[start_ray_worker] Joining worker ${WORKER_NODE_IP} to ${HEAD_NODE_IP}:${RAY_PORT}"
 uv run ray start --address "${HEAD_NODE_IP}:${RAY_PORT}" --node-ip-address "${WORKER_NODE_IP}"
-uv run ray status || true
+
+echo "[start_ray_worker] Waiting for worker to initialize..."
+sleep 3
+
+echo "[start_ray_worker] Ray cluster status:"
+uv run ray status || echo "[start_ray_worker] Warning: ray status unavailable"
+
 echo "[start_ray_worker] Done"
 
 

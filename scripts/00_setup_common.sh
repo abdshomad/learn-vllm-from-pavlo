@@ -15,9 +15,15 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 : "${VLLM_HOST:=0.0.0.0}"
 : "${TENSOR_PARALLEL_SIZE:=2}"
 : "${RAY_PORT:=6379}"
+: "${PROMETHEUS_PORT:=9090}"
+: "${GRAFANA_PORT:=3000}"
 
 # Optional network binding for vLLM multi-NIC
 : "${VLLM_HOST_IP:=${VLLM_HOST}}"
+
+# Grafana credentials (change after first login)
+: "${GRAFANA_ADMIN_USER:=admin}"
+: "${GRAFANA_ADMIN_PASS:=admin}"
 
 # Helper: activate venv if present
 activate_venv() {

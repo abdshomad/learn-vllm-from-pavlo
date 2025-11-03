@@ -100,6 +100,22 @@ You should see all nodes and the total GPU count.
 
 ---
 
+## 5a) Install Monitoring (Optional)
+
+For better observability, you can install Prometheus and Grafana to monitor your Ray cluster:
+
+```bash
+# Install Prometheus and Grafana (requires sudo)
+sudo bash scripts/03a_install_monitoring.sh
+```
+
+This installs:
+- Prometheus (metrics collection)
+- Grafana (visualization and dashboards)
+- Systemd services for both
+
+---
+
 ## 6) Download the model
 Download TinyLlama model to the shared filesystem.
 
@@ -116,6 +132,30 @@ rm -rf TinyLlama-1.1B-Chat-v1.0/.git
 If you use another download method (e.g., `huggingface-cli`), place the model under `/mnt/shared/cluster-llm/<MODEL_DIR>` and ensure all nodes can read it.
 
 TinyLlama is small (~637 MB) and downloads quickly, making it ideal for testing and development.
+
+---
+
+## 6a) Configure Monitoring (Optional)
+
+After starting the Ray cluster, configure monitoring:
+
+```bash
+# Configure Prometheus to scrape Ray metrics and create Grafana dashboards (requires sudo)
+sudo bash scripts/05a_configure_monitoring.sh
+
+# Verify the configuration
+bash scripts/05b_verify_monitoring.sh
+```
+
+This will:
+- Configure Prometheus to scrape Ray metrics from `http://<NODE_IP>:8265/metrics`
+- Add Prometheus as a datasource in Grafana
+- Create a basic Ray cluster dashboard
+
+Access URLs:
+- Prometheus: http://<NODE_IP>:9090
+- Grafana: http://<NODE_IP>:3000 (default: admin/admin)
+- Ray Dashboard: http://<NODE_IP>:8265
 
 ---
 
