@@ -66,6 +66,21 @@ sleep 3
 # Configure Grafana with Prometheus datasource and default dashboards
 echo "[configure_monitoring] Configuring Grafana..."
 
+# Enable iframe embedding in Grafana
+echo "[configure_monitoring] Enabling iframe embedding in Grafana..."
+if ! grep -q "^allow_embedding" /etc/grafana/grafana.ini; then
+  # Add allow_embedding if it doesn't exist
+  sed -i '/^\[security\]$/a allow_embedding = true' /etc/grafana/grafana.ini
+else
+  # Update existing allow_embedding setting
+  sed -i 's/^allow_embedding.*$/allow_embedding = true/' /etc/grafana/grafana.ini
+fi
+
+# Restart Grafana to apply iframe changes
+echo "[configure_monitoring] Restarting Grafana to apply iframe settings..."
+systemctl restart grafana-server
+sleep 3
+
 # Get Grafana admin credentials (now from common config)
 # GRAFANA_ADMIN_USER and GRAFANA_ADMIN_PASS are set in 00_setup_common.sh
 

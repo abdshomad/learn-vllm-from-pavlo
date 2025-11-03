@@ -61,6 +61,19 @@ else
   echo "[verify_monitoring] ✗ Grafana web UI not accessible (HTTP $GRAFANA_STATUS)"
 fi
 
+# Check Grafana iframe embedding
+echo "[verify_monitoring] Checking Grafana iframe embedding..."
+if [[ $EUID -eq 0 ]] && [[ -f /etc/grafana/grafana.ini ]]; then
+  if grep -q "^allow_embedding = true" /etc/grafana/grafana.ini 2>/dev/null; then
+    echo "[verify_monitoring] ✓ Grafana iframe embedding is enabled"
+  else
+    echo "[verify_monitoring] ⚠ Grafana iframe embedding is NOT enabled"
+    echo "[verify_monitoring]   Run: sudo bash scripts/05a_configure_monitoring.sh to enable"
+  fi
+else
+  echo "[verify_monitoring] ⚠ Cannot check Grafana iframe setting (requires sudo)"
+fi
+
 echo ""
 
 # Check Ray metrics endpoint (if Ray is running)
