@@ -1,0 +1,3 @@
+run all scripts in scripts folder sequentially and fix any errors, update the script and rerun to make sure the script executed successfully. Refer to previous scripts for standard.  Emit the output so we can see the progress. When there are urls, verify it using browser. Verify especially integration between ray, prometheus and grafana. Check that the services using 2 GPU, can load TinyLLama and can serve LLM requests. 
+
+IMPORTANT: Visit every available links to capture their details and capture steps-by-steps in detail.
