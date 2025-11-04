@@ -8,8 +8,13 @@ source "$SCRIPT_DIR/00_setup_common.sh"
 echo "[setup_venv] Installing uv (if needed)"
 if ! command -v uv >/dev/null 2>&1; then
   curl -Ls https://astral.sh/uv/install.sh | sh
-  # Ensure current shell can find uv; users may need to re-source their profile
-  export PATH="$HOME/.local/bin:$PATH"
+  # Ensure current shell can find uv; check both user and root locations
+  export PATH="$HOME/.local/bin:/root/.local/bin:$PATH"
+  # Verify uv is now available
+  if ! command -v uv >/dev/null 2>&1; then
+    echo "[setup_venv] WARNING: uv was installed but not found in PATH" >&2
+    echo "[setup_venv] Please ensure ~/.local/bin or /root/.local/bin is in your PATH" >&2
+  fi
 fi
 
 echo "[setup_venv] Checking if venv already exists at $VENV_DIR"

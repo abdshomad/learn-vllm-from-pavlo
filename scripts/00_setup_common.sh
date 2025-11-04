@@ -60,4 +60,48 @@ if [[ -z "${VLLM_PORT:-}" ]]; then
   VLLM_PORT=$(find_available_port 8000)
 fi
 
+# Helper: ensure uv is in PATH
+ensure_uv_in_path() {
+  # Check if uv is already available
+  if command -v uv >/dev/null 2>&1; then
+    return 0
+  fi
+  
+  # Try common installation locations
+  local uv_paths=(
+    "$HOME/.local/bin/uv"
+    "/root/.local/bin/uv"
+    "/usr/local/bin/uv"
+  )
+  
+  for uv_path in "${uv_paths[@]}"; do
+    if [[ -x "$uv_path" ]]; then
+      export PATH="$(dirname "$uv_path"):$PATH"
+      return 0
+    fi
+  done
+  
+  # If still not found, try to add common directories to PATH
+  local common_dirs=(
+    "$HOME/.local/bin"
+    "/root/.local/bin"
+    "/usr/local/bin"
+  )
+  
+  for dir in "${common_dirs[@]}"; do
+    if [[ -d "$dir" ]] && [[ -x "$dir/uv" ]]; then
+      export PATH="$dir:$PATH"
+      return 0
+    fi
+  done
+  
+  return 1
+}
+
+# Ensure uv is available
+ensure_uv_in_path || {
+  echo "WARNING: uv not found in PATH. Some scripts may fail." >&2
+  echo "Please ensure uv is installed and in your PATH." >&2
+}
+
 
