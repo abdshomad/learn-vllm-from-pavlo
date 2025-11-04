@@ -34,6 +34,33 @@ if ! kill -0 $VLLM_PID 2>/dev/null; then
   exit 1
 fi
 
+# Wait for vLLM API to be ready (with timeout)
+echo "[launch_vllm_single] Waiting for vLLM API to be ready..."
+MAX_WAIT=120
+WAIT_COUNT=0
+while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+  if curl -s "http://127.0.0.1:${VLLM_PORT}/health" > /dev/null 2>&1 || \
+     curl -s "http://127.0.0.1:${VLLM_PORT}/v1/models" > /dev/null 2>&1; then
+    echo "[launch_vllm_single] vLLM API is ready!"
+    break
+  fi
+  if ! kill -0 $VLLM_PID 2>/dev/null; then
+    echo "[launch_vllm_single] ERROR: vLLM process died during initialization" >&2
+    exit 1
+  fi
+  sleep 2
+  WAIT_COUNT=$((WAIT_COUNT + 2))
+done
+
+if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
+  echo "[launch_vllm_single] WARNING: vLLM API did not become ready within ${MAX_WAIT}s, but process is running" >&2
+fi
+
+# Save PID for later management
+PID_FILE="${SCRIPT_DIR}/../.vllm_single_pid"
+echo "$VLLM_PID" > "$PID_FILE"
+echo "[launch_vllm_single] PID saved to: ${PID_FILE}"
+
 echo "[launch_vllm_single] vLLM is running"
 echo ""
 echo "[launch_vllm_single] Access URLs:"
@@ -43,9 +70,7 @@ echo "[launch_vllm_single] - Prometheus: http://${NODE_IP}:${PROMETHEUS_PORT}"
 echo "[launch_vllm_single] - Grafana: http://${NODE_IP}:${GRAFANA_PORT}"
 echo "[launch_vllm_single] Done"
 echo ""
-echo "[launch_vllm_single] Press Ctrl+C to stop vLLM"
-
-# Wait for the process
-wait $VLLM_PID
+echo "[launch_vllm_single] vLLM is running in the background (PID: ${VLLM_PID})"
+echo "[launch_vllm_single] To stop vLLM: kill \$(cat ${PID_FILE})"
 
 
