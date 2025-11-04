@@ -230,17 +230,28 @@ class Ingress:
                 }
             }
 
+"""
+Environment flags:
+- SERVE_ENABLE_TINYLLAMA: if set to "0", skip deploying the TinyLlama service
+  so the app can be deployed alongside an external vLLM server that already
+  occupies the GPUs. Default: "1" (deploy when vLLM is installed).
+"""
+
 # Create bound deployments
 echo_service = EchoService.bind()
 calculator = Calculator.bind()
 
-# Only include TinyLlama if vLLM is available
-if VLLM_AVAILABLE:
+# Only include TinyLlama if enabled AND vLLM is available
+enable_tinyllama = os.getenv("SERVE_ENABLE_TINYLLAMA", "1") != "0"
+if enable_tinyllama and VLLM_AVAILABLE:
     TinyLlamaService = create_tinyllama_deployment()
     tinyllama_service = TinyLlamaService.bind()
     app = Ingress.bind(echo_service, calculator, tinyllama_service)
     print("TinyLlama service will be deployed")
 else:
     app = Ingress.bind(echo_service, calculator, None)
-    print("Warning: vLLM not available, TinyLlama service will not be deployed")
+    if not enable_tinyllama:
+        print("TinyLlama service disabled by SERVE_ENABLE_TINYLLAMA=0")
+    else:
+        print("Warning: vLLM not available, TinyLlama service will not be deployed")
 
