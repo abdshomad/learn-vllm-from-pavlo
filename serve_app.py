@@ -9,6 +9,7 @@ import os
 from ray import serve
 try:
     from vllm import LLM
+    from vllm import SamplingParams
     VLLM_AVAILABLE = True
 except ImportError:
     VLLM_AVAILABLE = False
@@ -149,7 +150,12 @@ def create_tinyllama_deployment():
             temperature = data.get("temperature", 0.7)
             
             try:
-                outputs = self.llm.generate([prompt], max_tokens=max_tokens, temperature=temperature)
+                # Use SamplingParams for vLLM
+                sampling_params = SamplingParams(
+                    max_tokens=max_tokens,
+                    temperature=temperature
+                )
+                outputs = self.llm.generate([prompt], sampling_params=sampling_params)
                 generated_text = outputs[0].outputs[0].text if outputs else ""
                 
                 return {

@@ -38,19 +38,15 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # Scrape Ray head node metrics
-  - job_name: 'ray-head'
+  # Scrape Ray metrics using service discovery
+  # Ray 2.x exposes metrics on ports discovered via /tmp/ray/prom_metrics_service_discovery.json
+  # This file is automatically updated by Ray with the correct metrics export ports
+  - job_name: 'ray'
     scrape_interval: 15s
-    static_configs:
-      - targets: ['${NODE_IP}:8265']
-    metrics_path: '/metrics'
-
-  # Scrape Ray worker nodes (add more if needed)
-  - job_name: 'ray-workers'
-    scrape_interval: 15s
-    static_configs:
-      - targets: ['${NODE_IP}:8265']
-    metrics_path: '/metrics'
+    file_sd_configs:
+      - files:
+          - /tmp/ray/prom_metrics_service_discovery.json
+        refresh_interval: 30s
 EOF
 
 # Set proper permissions
