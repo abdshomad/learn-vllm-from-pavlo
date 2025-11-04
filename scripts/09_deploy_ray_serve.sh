@@ -35,9 +35,15 @@ echo "[deploy_ray_serve] Deploying application from ${REPO_ROOT}/serve_app.py"
 echo "[deploy_ray_serve] Model: ${MODEL_DIR}"
 echo "[deploy_ray_serve] Tensor Parallel Size: ${TENSOR_PARALLEL_SIZE}"
 
+# By default, disable TinyLlama inside Serve to avoid GPU contention with the
+# standalone vLLM server started by earlier scripts. Users can override by
+# exporting SERVE_ENABLE_TINYLLAMA=1 before running this script.
+SERVE_ENABLE_TINYLLAMA="${SERVE_ENABLE_TINYLLAMA:-0}"
+echo "[deploy_ray_serve] SERVE_ENABLE_TINYLLAMA: ${SERVE_ENABLE_TINYLLAMA}"
+
 # Use the deployment script
 cd "$REPO_ROOT"
-SERVE_HOST="$SERVE_HOST" SERVE_PORT="$SERVE_PORT" MODEL_DIR="$MODEL_DIR" TENSOR_PARALLEL_SIZE="$TENSOR_PARALLEL_SIZE" uv run python deploy_serve.py
+SERVE_HOST="$SERVE_HOST" SERVE_PORT="$SERVE_PORT" MODEL_DIR="$MODEL_DIR" TENSOR_PARALLEL_SIZE="$TENSOR_PARALLEL_SIZE" SERVE_ENABLE_TINYLLAMA="$SERVE_ENABLE_TINYLLAMA" uv run python deploy_serve.py
 
 echo ""
 echo "[deploy_ray_serve] Ray Serve application deployed!"
