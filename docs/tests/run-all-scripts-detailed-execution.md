@@ -51,6 +51,20 @@ GPU 1: NVIDIA L40, 42198 MiB / 46068 MiB used
 - Shared directory created: `/mnt/shared/cluster-llm`
 - Directory verified writable
 
+$ tree -sh /mnt/shared/cluster-llm/TinyLlama-1.1B-Chat-v1.0
+[4.0K]  /mnt/shared/cluster-llm/TinyLlama-1.1B-Chat-v1.0
+├── [ 608]  config.json
+├── [ 566]  eval_results.json
+├── [ 124]  generation_config.json
+├── [2.0G]  model.safetensors
+├── [3.1K]  README.md
+├── [ 551]  special_tokens_map.json
+├── [1.3K]  tokenizer_config.json
+├── [1.8M]  tokenizer.json
+└── [488K]  tokenizer.model
+
+0 directories, 9 files
+
 ---
 
 ### Step 3: Download TinyLlama Model

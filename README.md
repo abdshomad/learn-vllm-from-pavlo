@@ -42,7 +42,7 @@ curl -Ls https://astral.sh/uv/install.sh | sh
 
 Create and activate a Python 3.13 environment in the project directory:
 ```bash
-cd /home/aiserver/LABS/GPU-CLUSTER/pavlo-khmel-hpc
+cd <DIR>
 uv venv .venv -p 3.13
 source .venv/bin/activate
 ```

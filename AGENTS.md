@@ -22,7 +22,7 @@ pipx install uv
 Create a project-local venv named `.venv` at the repo root:
 
 ```bash
-cd /home/aiserver/LABS/GPU-CLUSTER/pavlo-khmel-hpc
+cd <DIR>
 uv venv .venv
 ```
 
