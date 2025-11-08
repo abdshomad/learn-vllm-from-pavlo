@@ -20,13 +20,13 @@ echo "[start_ray_head] Head node: ${NODE_IP}"
 echo "[start_ray_head] Grafana: ${RAY_GRAFANA_HOST}"
 echo "[start_ray_head] Prometheus: ${RAY_PROMETHEUS_HOST}"
 
-uv run ray start --head --node-ip-address "$NODE_IP" --port "$RAY_PORT" --dashboard-host 0.0.0.0
+uv run python -m ray.scripts.scripts start --head --node-ip-address "$NODE_IP" --port "$RAY_PORT" --dashboard-host 0.0.0.0
 
 echo "[start_ray_head] Waiting for Ray to initialize..."
 sleep 3
 
 echo "[start_ray_head] Ray cluster status:"
-uv run ray status || echo "[start_ray_head] Warning: ray status unavailable"
+uv run python -m ray.scripts.scripts status || echo "[start_ray_head] Warning: ray status unavailable"
 
 echo ""
 echo "[start_ray_head] Access URLs:"

@@ -92,7 +92,7 @@ kill_gpu_processes() {
 echo "[shutdown_all] =========================================="
 echo "[shutdown_all] Step 1: Stopping Ray Serve deployments"
 echo "[shutdown_all] =========================================="
-if uv run ray status >/dev/null 2>&1; then
+if uv run python -m ray.scripts.scripts status >/dev/null 2>&1; then
   echo "[shutdown_all] Ray cluster is running, checking for Serve deployments..."
   
   # Try to shutdown Ray Serve if it's deployed
@@ -110,9 +110,9 @@ echo ""
 echo "[shutdown_all] =========================================="
 echo "[shutdown_all] Step 2: Stopping Ray cluster"
 echo "[shutdown_all] =========================================="
-if uv run ray status >/dev/null 2>&1; then
+if uv run python -m ray.scripts.scripts status >/dev/null 2>&1; then
   echo "[shutdown_all] Stopping Ray cluster..."
-  uv run ray stop --force 2>/dev/null || true
+  uv run python -m ray.scripts.scripts stop --force 2>/dev/null || true
   sleep 2
   echo "[shutdown_all] ✓ Ray cluster stopped"
 else
@@ -187,7 +187,7 @@ echo "[shutdown_all] Step 8: Final verification"
 echo "[shutdown_all] =========================================="
 
 # Check Ray
-if uv run ray status >/dev/null 2>&1; then
+if uv run python -m ray.scripts.scripts status >/dev/null 2>&1; then
   echo "[shutdown_all] ⚠ WARNING: Ray cluster still appears to be running"
 else
   echo "[shutdown_all] ✓ Ray cluster confirmed stopped"

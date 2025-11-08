@@ -28,13 +28,13 @@ echo "[start_ray_worker] Joining cluster at: ${HEAD_NODE_IP}:${RAY_PORT}"
 echo "[start_ray_worker] Grafana: ${RAY_GRAFANA_HOST}"
 echo "[start_ray_worker] Prometheus: ${RAY_PROMETHEUS_HOST}"
 
-uv run ray start --address "${HEAD_NODE_IP}:${RAY_PORT}" --node-ip-address "${WORKER_NODE_IP}"
+uv run python -m ray.scripts.scripts start --address "${HEAD_NODE_IP}:${RAY_PORT}" --node-ip-address "${WORKER_NODE_IP}"
 
 echo "[start_ray_worker] Waiting for worker to initialize..."
 sleep 3
 
 echo "[start_ray_worker] Ray cluster status:"
-uv run ray status || echo "[start_ray_worker] Warning: ray status unavailable"
+uv run python -m ray.scripts.scripts status || echo "[start_ray_worker] Warning: ray status unavailable"
 
 echo ""
 echo "[start_ray_worker] Access URLs:"

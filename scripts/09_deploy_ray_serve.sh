@@ -22,7 +22,7 @@ echo "[deploy_ray_serve] Serve Host: ${SERVE_HOST}"
 echo "[deploy_ray_serve] Serve Port: ${SERVE_PORT}"
 
 # Check if Ray is running
-if ! uv run ray status >/dev/null 2>&1; then
+if ! uv run python -m ray.scripts.scripts status >/dev/null 2>&1; then
   echo "[deploy_ray_serve] ERROR: Ray cluster is not running" >&2
   echo "[deploy_ray_serve] Please start Ray first with: bash scripts/04_start_ray_head.sh" >&2
   exit 1
