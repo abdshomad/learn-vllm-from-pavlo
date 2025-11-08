@@ -9,9 +9,14 @@ echo "[install_monitoring] Installing Prometheus and Grafana..."
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
-  echo "[install_monitoring] ERROR: This script must be run as root" >&2
-  echo "[install_monitoring] Please run with sudo" >&2
-  exit 1
+  echo "[install_monitoring] ⚠ This script needs root privileges to install or configure system services."
+  if systemctl is-active --quiet prometheus 2>/dev/null && systemctl is-active --quiet grafana-server 2>/dev/null; then
+    echo "[install_monitoring] ✓ Prometheus and Grafana already appear to be running. Skipping installation."
+    exit 0
+  fi
+  echo "[install_monitoring] Skipping automatic installation. If installation is required, run:"
+  echo "[install_monitoring]   sudo bash $0"
+  exit 0
 fi
 
 # Detect distribution

@@ -11,8 +11,21 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 export PATH="$HOME/.local/bin:/root/.local/bin:/usr/local/bin:$PATH"
 
 # Create logs directory if it doesn't exist
+LOG_DIR_NOTE=""
 LOGS_DIR="${REPO_ROOT}/logs"
-mkdir -p "$LOGS_DIR"
+mkdir -p "$LOGS_DIR" 2>/dev/null || true
+
+# Fallback if the default logs directory is not writable (e.g., owned by root)
+if [[ ! -w "$LOGS_DIR" ]]; then
+    ALT_LOGS_DIR="${REPO_ROOT}/logs-local"
+    mkdir -p "$ALT_LOGS_DIR"
+    if [[ -w "$ALT_LOGS_DIR" ]]; then
+        LOGS_DIR="$ALT_LOGS_DIR"
+    else
+        LOGS_DIR="$(mktemp -d "/tmp/run_all_logs_XXXX")"
+    fi
+    LOG_DIR_NOTE="Using alternate logs directory: $LOGS_DIR (default logs/ not writable)"
+fi
 
 # Generate datetime-stamped log file
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
@@ -77,6 +90,9 @@ run_script() {
 log_with_timestamp "${GREEN}========================================${NC}"
 log_with_timestamp "${GREEN}Starting full deployment pipeline${NC}"
 log_with_timestamp "${GREEN}Log file: $LOG_FILE${NC}"
+if [[ -n "$LOG_DIR_NOTE" ]]; then
+    log_with_timestamp "${YELLOW}[WARN]${NC} ${LOG_DIR_NOTE}"
+fi
 log_with_timestamp "${GREEN}========================================${NC}"
 
 # Track which scripts succeed/fail

@@ -58,7 +58,16 @@ fi
 
 # Save PID for later management
 PID_FILE="${SCRIPT_DIR}/../.vllm_single_pid"
-echo "$VLLM_PID" > "$PID_FILE"
+if [[ -e "$PID_FILE" && ! -w "$PID_FILE" ]]; then
+  echo "[launch_vllm_single] ⚠ Existing PID file is not writable (${PID_FILE}). Using a temporary location."
+  PID_FILE="$(mktemp /tmp/vllm_single_pid_XXXX)"
+fi
+
+if ! echo "$VLLM_PID" > "$PID_FILE"; then
+  echo "[launch_vllm_single] ⚠ Unable to write PID to ${PID_FILE}. Falling back to /tmp/vllm_single_pid"
+  PID_FILE="/tmp/vllm_single_pid"
+  echo "$VLLM_PID" > "$PID_FILE"
+fi
 echo "[launch_vllm_single] PID saved to: ${PID_FILE}"
 
 echo "[launch_vllm_single] vLLM is running"

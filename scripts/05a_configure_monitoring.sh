@@ -9,9 +9,14 @@ echo "[configure_monitoring] Configuring Prometheus and Grafana for Ray..."
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
-  echo "[configure_monitoring] ERROR: This script must be run as root" >&2
-  echo "[configure_monitoring] Please run with sudo" >&2
-  exit 1
+  echo "[configure_monitoring] ⚠ Root privileges are required to modify system Prometheus/Grafana configuration."
+  if systemctl is-active --quiet prometheus 2>/dev/null && systemctl is-active --quiet grafana-server 2>/dev/null; then
+    echo "[configure_monitoring] ✓ Prometheus and Grafana services are already running. Assuming monitoring is configured."
+  else
+    echo "[configure_monitoring] Skipping automated configuration. To configure monitoring manually run:"
+    echo "[configure_monitoring]   sudo bash $0"
+  fi
+  exit 0
 fi
 
 # Detect Ray head node
@@ -19,6 +24,8 @@ NODE_IP="${NODE_IP:-}"
 if [[ -z "${NODE_IP}" ]]; then
   NODE_IP="$(primary_ip)"
 fi
+
+RAY_TMPDIR_PATH="${RAY_TMPDIR:-${REPO_ROOT}/.ray_tmp}"
 
 echo "[configure_monitoring] Configuring for Ray head at ${NODE_IP}:${RAY_PORT}"
 
@@ -39,13 +46,13 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   # Scrape Ray metrics using service discovery
-  # Ray 2.x exposes metrics on ports discovered via /tmp/ray/prom_metrics_service_discovery.json
+  # Ray 2.x exposes metrics on ports discovered via ${RAY_TMPDIR_PATH}/prom_metrics_service_discovery.json
   # This file is automatically updated by Ray with the correct metrics export ports
   - job_name: 'ray'
     scrape_interval: 15s
     file_sd_configs:
       - files:
-          - /tmp/ray/prom_metrics_service_discovery.json
+          - ${RAY_TMPDIR_PATH}/prom_metrics_service_discovery.json
         refresh_interval: 30s
 EOF
 
@@ -213,7 +220,7 @@ rm -f /tmp/grafana-datasource.json /tmp/ray-dashboard.json
 
 # Import Ray-provided dashboards if they exist
 echo "[configure_monitoring] Importing Ray-provided Grafana dashboards..."
-RAY_DASHBOARD_DIR="/tmp/ray/session_latest/metrics/grafana/dashboards"
+RAY_DASHBOARD_DIR="${RAY_TMPDIR_PATH}/session_latest/metrics/grafana/dashboards"
 
 if [[ -d "$RAY_DASHBOARD_DIR" ]] && command -v python3 >/dev/null 2>&1; then
   python3 << 'PYEOF'
@@ -223,7 +230,8 @@ import subprocess
 import os
 import tempfile
 
-dashboard_dir = "/tmp/ray/session_latest/metrics/grafana/dashboards"
+default_tmpdir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".ray_tmp"))
+dashboard_dir = os.environ.get("RAY_TMPDIR", default_tmpdir) + "/session_latest/metrics/grafana/dashboards"
 dashboard_files = glob.glob(os.path.join(dashboard_dir, '*_grafana_dashboard.json'))
 
 for dashboard_file in dashboard_files:

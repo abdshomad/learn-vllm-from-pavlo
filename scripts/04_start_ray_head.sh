@@ -20,6 +20,18 @@ echo "[start_ray_head] Head node: ${NODE_IP}"
 echo "[start_ray_head] Grafana: ${RAY_GRAFANA_HOST}"
 echo "[start_ray_head] Prometheus: ${RAY_PROMETHEUS_HOST}"
 
+# Ensure no stale Ray head is running
+if uv run python -m ray.scripts.scripts status --address "${NODE_IP}:${RAY_PORT}" >/dev/null 2>&1; then
+  echo "[start_ray_head] Detected existing Ray cluster at ${NODE_IP}:${RAY_PORT}. Attempting clean shutdown..."
+  if uv run python -m ray.scripts.scripts stop --force >/dev/null 2>&1; then
+    echo "[start_ray_head] Previous Ray cluster stopped successfully."
+  else
+    echo "[start_ray_head] ✗ Unable to stop existing Ray cluster automatically."
+    echo "[start_ray_head] Please run 'bash scripts/99_shutdown_all.sh' (use sudo if required) and retry."
+    exit 1
+  fi
+fi
+
 uv run python -m ray.scripts.scripts start --head --node-ip-address "$NODE_IP" --port "$RAY_PORT" --dashboard-host 0.0.0.0
 
 echo "[start_ray_head] Waiting for Ray to initialize..."

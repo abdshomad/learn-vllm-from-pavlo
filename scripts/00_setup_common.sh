@@ -21,6 +21,16 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Optional network binding for vLLM multi-NIC
 : "${VLLM_HOST_IP:=${VLLM_HOST}}"
 
+# Ensure Ray uses a writable temporary directory
+: "${RAY_TMPDIR:=/tmp/ray-${USER:-$(id -u)}}"
+if [[ -d "$RAY_TMPDIR" && ! -w "$RAY_TMPDIR" ]]; then
+  ALT_RAY_TMPDIR="$REPO_ROOT/.ray_tmp"
+  mkdir -p "$ALT_RAY_TMPDIR"
+  RAY_TMPDIR="$ALT_RAY_TMPDIR"
+fi
+mkdir -p "$RAY_TMPDIR"
+export RAY_TMPDIR
+
 # Grafana credentials (change after first login)
 : "${GRAFANA_ADMIN_USER:=admin}"
 : "${GRAFANA_ADMIN_PASS:=admin}"

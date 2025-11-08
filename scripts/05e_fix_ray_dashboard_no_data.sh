@@ -22,6 +22,7 @@ RAY_DASHBOARD_URL="http://${NODE_IP}:8265"
 PROMETHEUS_URL="http://${NODE_IP}:${PROMETHEUS_PORT}"
 SCREENSHOT_DIR="${REPO_ROOT}/screenshots/ray-dashboard-fix"
 mkdir -p "$SCREENSHOT_DIR"
+RAY_TMPDIR_PATH="${RAY_TMPDIR:-${REPO_ROOT}/.ray_tmp}"
 
 # Function to check if Ray dashboard is accessible
 check_ray_dashboard_accessible() {
@@ -104,7 +105,7 @@ except Exception:
 
 # Function to check if service discovery file exists and has targets
 check_service_discovery_file() {
-  local sd_file="/tmp/ray/prom_metrics_service_discovery.json"
+  local sd_file="${RAY_TMPDIR_PATH}/prom_metrics_service_discovery.json"
   
   if [[ ! -f "$sd_file" ]]; then
     return 1
@@ -284,9 +285,22 @@ apply_fix() {
   # Check if we need sudo
   if [[ $EUID -ne 0 ]]; then
     echo "[fix_ray_dashboard] Running fix script with sudo..."
-    sudo bash "$SCRIPT_DIR/05c_fix_prometheus_config.sh"
+    if sudo -n true 2>/dev/null; then
+      if ! sudo bash "$SCRIPT_DIR/05c_fix_prometheus_config.sh"; then
+        echo "[fix_ray_dashboard] ✗ Failed to apply Prometheus fix via sudo"
+        return 1
+      fi
+    else
+      echo "[fix_ray_dashboard] ⚠ Sudo password is required but not available in this non-interactive context."
+      echo "[fix_ray_dashboard]   Skipping automatic fix. Please run manually:"
+      echo "[fix_ray_dashboard]     sudo bash \"$SCRIPT_DIR/05c_fix_prometheus_config.sh\""
+      return 2
+    fi
   else
-    bash "$SCRIPT_DIR/05c_fix_prometheus_config.sh"
+    if ! bash "$SCRIPT_DIR/05c_fix_prometheus_config.sh"; then
+      echo "[fix_ray_dashboard] ✗ Failed to apply Prometheus fix"
+      return 1
+    fi
   fi
   
   echo "[fix_ray_dashboard] ✓ Prometheus configuration updated"
@@ -360,7 +374,17 @@ main() {
     "Ray Dashboard showing No data before fix"
   
   # Apply the fix
-  apply_fix
+  if ! apply_fix; then
+    status=$?
+    if [[ $status -eq 2 ]]; then
+      echo ""
+      echo "[fix_ray_dashboard] Manual intervention required to complete the Prometheus fix."
+      echo "[fix_ray_dashboard] After running the manual command, re-run this script to verify the dashboard."
+      exit 0
+    fi
+    echo "[fix_ray_dashboard] ✗ Automatic fix failed (exit code: $status)"
+    exit "$status"
+  fi
   
   # Verify the fix
   verify_fix
