@@ -53,6 +53,17 @@ uv pip install --upgrade pip
 uv pip install "ray[default]" vllm huggingface_hub git-lfs
 ```
 
+### Configure environment defaults
+
+Environment variables used by the helper scripts are centralized in `env.sh`.
+Update the values in that file (or export the same variables in your shell) so
+the scripts align with your deployment. Every script under `scripts/` sources
+`scripts/00_setup_common.sh`, and `scripts/98_run_all.sh` auto-loads `env.sh`
+when it is present.
+- `SERVE_ENABLE_TINYLLAMA` defaults to `1` so the Ray Serve deployment exposes
+  the TinyLlama endpoint for verification. The deployment script will stop the
+  standalone vLLM server automatically to free GPUs before bringing Serve up.
+
 Notes:
 - If `git-lfs` is not available as a Python package in your environment, install it via your OS package manager instead (e.g., `apt install git-lfs`).
 

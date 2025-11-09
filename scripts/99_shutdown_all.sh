@@ -228,3 +228,10 @@ echo "[shutdown_all] - Monitoring services: stopped"
 echo "[shutdown_all] - GPU processes: stopped"
 echo "[shutdown_all] - Cluster ports: cleared"
 echo ""
+
+# Reset cached Ray port selection for future runs
+RAY_STATE_DIR="$REPO_ROOT/.cache/run_all"
+if [[ -d "$RAY_STATE_DIR" ]]; then
+  rm -f "$RAY_STATE_DIR/ray_port"
+fi
+echo ""

@@ -252,11 +252,12 @@ for dashboard_file in dashboard_files:
             temp_path = f.name
         
         try:
+            grafana_port = os.environ.get("GRAFANA_PORT", "3000")
             result = subprocess.run(
                 ['curl', '-s', '-u', 'admin:admin', '-X', 'POST',
                  '-H', 'Content-Type: application/json',
                  '-d', f'@{temp_path}',
-                 'http://localhost:3000/api/dashboards/db'],
+                 f'http://localhost:{grafana_port}/api/dashboards/db'],
                 capture_output=True,
                 text=True
             )

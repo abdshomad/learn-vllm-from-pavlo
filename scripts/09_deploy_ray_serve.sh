@@ -41,6 +41,25 @@ echo "[deploy_ray_serve] Tensor Parallel Size: ${TENSOR_PARALLEL_SIZE}"
 SERVE_ENABLE_TINYLLAMA="${SERVE_ENABLE_TINYLLAMA:-0}"
 echo "[deploy_ray_serve] SERVE_ENABLE_TINYLLAMA: ${SERVE_ENABLE_TINYLLAMA}"
 
+if [[ "$SERVE_ENABLE_TINYLLAMA" != "0" ]]; then
+  SINGLE_VLLM_PID_FILE="${REPO_ROOT}/.vllm_single_pid"
+  if [[ -f "$SINGLE_VLLM_PID_FILE" ]]; then
+    SINGLE_VLLM_PID="$(cat "$SINGLE_VLLM_PID_FILE" 2>/dev/null || true)"
+    if [[ -n "${SINGLE_VLLM_PID}" ]] && kill -0 "$SINGLE_VLLM_PID" 2>/dev/null; then
+      echo "[deploy_ray_serve] Detected standalone vLLM process (PID ${SINGLE_VLLM_PID}). Stopping it to free GPUs for Ray Serve..."
+      if kill "$SINGLE_VLLM_PID" 2>/dev/null; then
+        wait "$SINGLE_VLLM_PID" 2>/dev/null || true
+        echo "[deploy_ray_serve] Standalone vLLM process stopped."
+        rm -f "$SINGLE_VLLM_PID_FILE"
+      else
+        echo "[deploy_ray_serve] ⚠ Unable to terminate standalone vLLM process automatically." >&2
+        echo "[deploy_ray_serve]    Please run 'bash scripts/99_shutdown_all.sh' and retry, or set SERVE_ENABLE_TINYLLAMA=0." >&2
+        exit 1
+      fi
+    fi
+  fi
+fi
+
 # Use the deployment script
 cd "$REPO_ROOT"
 SERVE_HOST="$SERVE_HOST" SERVE_PORT="$SERVE_PORT" MODEL_DIR="$MODEL_DIR" TENSOR_PARALLEL_SIZE="$TENSOR_PARALLEL_SIZE" SERVE_ENABLE_TINYLLAMA="$SERVE_ENABLE_TINYLLAMA" uv run python deploy_serve.py

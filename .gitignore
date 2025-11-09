@@ -2,5 +2,6 @@ screenshots/*
 __pycache__/*
 logs/*
 logs*/*
+.cache/
 .vllm_*_pid
 .ray_tmp/

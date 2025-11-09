@@ -89,24 +89,32 @@ class Calculator:
 
 def create_tinyllama_deployment():
     """Create TinyLlama deployment with appropriate GPU allocation."""
-    tensor_parallel_size = int(os.getenv("TENSOR_PARALLEL_SIZE", "1"))
-    num_gpus = max(1, tensor_parallel_size)  # At least 1 GPU, more if tensor parallel
+    env_tensor_parallel = os.getenv("TENSOR_PARALLEL_SIZE", "1")
+    try:
+        tensor_parallel_size = max(1, int(env_tensor_parallel))
+    except ValueError:
+        tensor_parallel_size = 1
+    num_gpus = tensor_parallel_size if tensor_parallel_size > 0 else 1
+    ray_actor_options = {
+        "num_gpus": num_gpus,
+        "runtime_env": {"env_vars": {"TENSOR_PARALLEL_SIZE": str(tensor_parallel_size)}},
+    }
     
     @serve.deployment(
         name="tinyllama",
         num_replicas=1,
-        ray_actor_options={"num_gpus": num_gpus}
+        ray_actor_options=ray_actor_options
     )
     class TinyLlamaService:
         """TinyLlama LLM service using vLLM."""
         
-        def __init__(self):
+        def __init__(self, tensor_parallel=tensor_parallel_size):
             if not VLLM_AVAILABLE:
                 raise RuntimeError("vLLM is not available. Please install vllm package.")
             
             # Get model path from environment or use default
             model_path = os.getenv("MODEL_DIR", "/mnt/shared/cluster-llm/TinyLlama-1.1B-Chat-v1.0")
-            tensor_parallel_size = int(os.getenv("TENSOR_PARALLEL_SIZE", "1"))
+            tensor_parallel_size = tensor_parallel
             
             print(f"Loading TinyLlama model from: {model_path}")
             print(f"Tensor parallel size: {tensor_parallel_size}")

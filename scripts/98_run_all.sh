@@ -7,6 +7,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Source global environment defaults if present
+ENV_FILE="${REPO_ROOT}/env.sh"
+if [[ -f "$ENV_FILE" ]]; then
+    # shellcheck source=/dev/null
+    source "$ENV_FILE"
+fi
+
 # Ensure PATH includes common uv installation locations
 export PATH="$HOME/.local/bin:/root/.local/bin:/usr/local/bin:$PATH"
 
@@ -181,6 +188,26 @@ run_script "09_deploy_ray_serve.sh" "Deploy Ray Serve application" && SUCCESSFUL
     log_with_timestamp "${YELLOW}[WARN]${NC} Ray Serve deployment failed"
 }
 
+# Output service URLs for convenience
+if [[ -f "$REPO_ROOT/env.sh" ]]; then
+    # shellcheck source=/dev/null
+    source "$REPO_ROOT/env.sh"
+fi
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/00_setup_common.sh"
+
+# Collect primary node IP (best effort)
+PRIMARY_IP="${NODE_IP:-$(hostname -I 2>/dev/null | awk '{print $1}')}"
+
+log_with_timestamp ""
+log_with_timestamp "${GREEN}Service URLs:${NC}"
+log_with_timestamp "  Ray Dashboard:      http://${PRIMARY_IP:-localhost}:${RAY_PORT:-8265}"
+log_with_timestamp "  Ray Serve Ingress:  http://${PRIMARY_IP:-localhost}:${SERVE_PORT:-8001}/"
+if [[ -n "${VLLM_PORT:-}" ]]; then
+    log_with_timestamp "  vLLM API:           http://${PRIMARY_IP:-localhost}:${VLLM_PORT}"
+fi
+log_with_timestamp "  Prometheus:         http://${PRIMARY_IP:-localhost}:${PROMETHEUS_PORT:-9090}"
+log_with_timestamp "  Grafana:            http://${PRIMARY_IP:-localhost}:${GRAFANA_PORT:-3000}"
 # Summary
 log_with_timestamp "${GREEN}========================================${NC}"
 log_with_timestamp "${GREEN}Deployment pipeline completed${NC}"
