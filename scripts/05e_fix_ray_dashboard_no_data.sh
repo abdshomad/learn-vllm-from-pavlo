@@ -7,8 +7,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/00_setup_common.sh"
+COMMON_SETUP="$REPO_ROOT/scripts/00_setup_common.sh"
+if [[ -f "$COMMON_SETUP" ]]; then
+  source "$COMMON_SETUP"
+else
+  echo "[fix_ray_dashboard] ERROR: Unable to locate common setup script at $COMMON_SETUP" >&2
+  exit 1
+fi
 
 echo "[fix_ray_dashboard] Starting Ray dashboard 'No data' detection and fix..."
 echo ""

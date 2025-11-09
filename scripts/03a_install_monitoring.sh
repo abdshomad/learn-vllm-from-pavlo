@@ -2,8 +2,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/00_setup_common.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+COMMON_SETUP="$REPO_ROOT/scripts/00_setup_common.sh"
+
+if [[ -f "$COMMON_SETUP" ]]; then
+  # shellcheck source=/dev/null
+  source "$COMMON_SETUP"
+else
+  echo "[install_monitoring] ERROR: Unable to locate $COMMON_SETUP" >&2
+  exit 1
+fi
 
 echo "[install_monitoring] Installing Prometheus and Grafana..."
 

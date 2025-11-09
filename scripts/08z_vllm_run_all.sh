@@ -7,6 +7,13 @@ set -euo pipefail
 # Optional: MODEL env var to use a specific served model.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+COMMON_SETUP="$REPO_ROOT/scripts/00_setup_common.sh"
+
+if [[ -f "$COMMON_SETUP" ]]; then
+  # shellcheck source=/dev/null
+  source "$COMMON_SETUP"
+fi
 
 echo "[vllm-runner] Starting vLLM tests..."
 

@@ -2,13 +2,25 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/00_setup_common.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+COMMON_SETUP="$REPO_ROOT/scripts/00_setup_common.sh"
+
+if [[ -f "$COMMON_SETUP" ]]; then
+  # shellcheck source=/dev/null
+  source "$COMMON_SETUP"
+else
+  echo "[shutdown_all] ERROR: Unable to locate $COMMON_SETUP" >&2
+  exit 1
+fi
 
 echo "=========================================="
 echo "[shutdown_all] Shutting down GPU Cluster"
 echo "=========================================="
 echo ""
+
+# Clear persisted port state so future runs can re-select cleanly
+STATE_DIR="$REPO_ROOT/.cache/run_all"
+rm -f "$STATE_DIR/vllm_port" "$STATE_DIR/ray_port"
 
 # Detect primary IP
 NODE_IP="${NODE_IP:-}"

@@ -2,8 +2,16 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/00_setup_common.sh"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+COMMON_SETUP="$REPO_ROOT/scripts/00_setup_common.sh"
+
+if [[ -f "$COMMON_SETUP" ]]; then
+  # shellcheck source=/dev/null
+  source "$COMMON_SETUP"
+else
+  echo "[launch_vllm_single] ERROR: Unable to locate $COMMON_SETUP" >&2
+  exit 1
+fi
 
 export VLLM_HOST_IP="${VLLM_HOST_IP}"
 
@@ -16,6 +24,11 @@ echo "[launch_vllm_single] Starting vLLM (single node) on ${VLLM_HOST}:${VLLM_PO
 echo "[launch_vllm_single] Node IP: ${NODE_IP}"
 echo "[launch_vllm_single] Model: ${MODEL_DIR}"
 echo "[launch_vllm_single] Tensor Parallel Size: ${TENSOR_PARALLEL_SIZE}"
+
+# Persist selected VLLM port for downstream scripts
+VLLM_PORT_FILE="$REPO_ROOT/.cache/run_all/vllm_port"
+mkdir -p "$(dirname "$VLLM_PORT_FILE")"
+printf "%s" "$VLLM_PORT" > "$VLLM_PORT_FILE"
 
 uv run python -m vllm.entrypoints.openai.api_server \
   --model "$MODEL_DIR" \

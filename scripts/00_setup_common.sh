@@ -28,6 +28,23 @@ fi
 # Optional network binding for vLLM multi-NIC
 : "${VLLM_HOST_IP:=${VLLM_HOST}}"
 
+# State directory used to persist runtime ports across scripts
+STATE_DIR="$REPO_ROOT/.cache/run_all"
+mkdir -p "$STATE_DIR"
+
+read_state_var() {
+  local file_path="$1"
+  if [[ -f "$file_path" ]]; then
+    cat "$file_path" 2>/dev/null || true
+  fi
+}
+
+write_state_var() {
+  local file_path="$1"
+  local value="$2"
+  printf "%s" "$value" > "$file_path"
+}
+
 # Helper: find next available port starting from a given port
 find_available_port() {
   local start_port="${1:-8000}"
@@ -56,9 +73,7 @@ mkdir -p "$RAY_TMPDIR"
 export RAY_TMPDIR
 
 # Persist and auto-select a free Ray port to avoid clashes with stale clusters
-RAY_STATE_DIR="$REPO_ROOT/.cache/run_all"
-RAY_PORT_FILE="$RAY_STATE_DIR/ray_port"
-mkdir -p "$RAY_STATE_DIR"
+RAY_PORT_FILE="$STATE_DIR/ray_port"
 
 if [[ -f "$RAY_PORT_FILE" ]]; then
   cached_port="$(cat "$RAY_PORT_FILE" 2>/dev/null || true)"
@@ -92,16 +107,26 @@ primary_ip() {
   hostname -I 2>/dev/null | awk '{print $1}'
 }
 
-# Auto-find available VLLM port if not explicitly set
+# Auto-find available VLLM port if not explicitly set, but reuse persisted value if present
+VLLM_PORT_FILE="$STATE_DIR/vllm_port"
+
+if [[ -z "${VLLM_PORT:-}" ]]; then
+  persisted_vllm_port="$(read_state_var "$VLLM_PORT_FILE")"
+  if [[ -n "$persisted_vllm_port" ]]; then
+    VLLM_PORT="$persisted_vllm_port"
+  fi
+fi
+
 if [[ -z "${VLLM_PORT:-}" ]]; then
   VLLM_PORT=$(find_available_port 8000)
-elif command -v nc >/dev/null 2>&1 && nc -z 127.0.0.1 "$VLLM_PORT" 2>/dev/null; then
+elif [[ ! -f "$VLLM_PORT_FILE" ]] && command -v nc >/dev/null 2>&1 && nc -z 127.0.0.1 "$VLLM_PORT" 2>/dev/null; then
   next_vllm_port="$(find_available_port "$VLLM_PORT")"
   if [[ "$next_vllm_port" != "$VLLM_PORT" ]]; then
     echo "[setup_common] Info: Port $VLLM_PORT assigned to VLLM_PORT is busy, using $next_vllm_port instead." >&2
     VLLM_PORT="$next_vllm_port"
   fi
 fi
+write_state_var "$VLLM_PORT_FILE" "$VLLM_PORT"
 export VLLM_PORT
 
 # Helper: ensure uv is in PATH

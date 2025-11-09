@@ -5,3 +5,4 @@ logs*/*
 .cache/
 .vllm_*_pid
 .ray_tmp/
+*/__pycache__/*

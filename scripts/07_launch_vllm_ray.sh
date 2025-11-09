@@ -2,6 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Determine NODE_IP and VLLM_HOST_IP BEFORE sourcing common.sh
 # to avoid VLLM_HOST_IP defaulting to 0.0.0.0
@@ -13,8 +14,14 @@ fi
 # Set VLLM_HOST_IP to actual IP before sourcing to prevent default 0.0.0.0
 export VLLM_HOST_IP="${VLLM_HOST_IP:-${NODE_IP}}"
 
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/00_setup_common.sh"
+COMMON_SETUP="$REPO_ROOT/scripts/00_setup_common.sh"
+if [[ -f "$COMMON_SETUP" ]]; then
+  # shellcheck source=/dev/null
+  source "$COMMON_SETUP"
+else
+  echo "[launch_vllm_ray] ERROR: Unable to locate $COMMON_SETUP" >&2
+  exit 1
+fi
 
 echo "[launch_vllm_ray] Starting vLLM (Ray backend) on ${VLLM_HOST}:${VLLM_PORT}"
 echo "[launch_vllm_ray] Node IP: ${NODE_IP}"
